@@ -17,9 +17,11 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const rating_entity_1 = require("./entities/rating.entity");
+const stores_service_1 = require("../stores/stores.service");
 let RatingsService = class RatingsService {
-    constructor(ratingsRepository) {
+    constructor(ratingsRepository, storesService) {
         this.ratingsRepository = ratingsRepository;
+        this.storesService = storesService;
     }
     async create(createRatingDto, userId) {
         const existingRating = await this.ratingsRepository.findOne({
@@ -76,42 +78,26 @@ let RatingsService = class RatingsService {
         };
     }
     async getStoreOwnerDashboard(ownerId) {
-        const ratings = await this.ratingsRepository
-            .createQueryBuilder('rating')
-            .leftJoinAndSelect('rating.store', 'store')
-            .leftJoinAndSelect('rating.user', 'user')
-            .leftJoin('store.owner', 'owner')
-            .where('owner.id = :ownerId', { ownerId })
-            .getMany();
-        const storeRatings = ratings.reduce((acc, rating) => {
-            if (!acc[rating.storeId]) {
-                acc[rating.storeId] = {
-                    storeId: rating.storeId,
-                    storeName: rating.store.name,
-                    ratings: [],
-                };
-            }
-            acc[rating.storeId].ratings.push({
-                user: {
-                    id: rating.user.id,
-                    name: rating.user.name,
-                    email: rating.user.email,
-                },
-                rating: rating.rating,
-                createdAt: rating.createdAt,
-            });
-            return acc;
-        }, {});
-        const result = Object.values(storeRatings).map((store) => {
+        const stores = await this.storesService.findByOwner(ownerId);
+        const result = stores.map((store) => {
             const averageRating = store.ratings.length > 0
                 ? store.ratings.reduce((sum, r) => sum + r.rating, 0) / store.ratings.length
                 : 0;
+            const validRatings = store.ratings.filter((rating) => rating.user != null);
             return {
-                storeId: store.storeId,
-                storeName: store.storeName,
+                storeId: store.id,
+                storeName: store.name,
                 averageRating: parseFloat(averageRating.toFixed(2)),
                 totalRatings: store.ratings.length,
-                ratings: store.ratings,
+                ratings: validRatings.map((rating) => ({
+                    user: {
+                        id: rating.user.id,
+                        name: rating.user.name,
+                        email: rating.user.email,
+                    },
+                    rating: rating.rating,
+                    createdAt: rating.createdAt,
+                })),
             };
         });
         return result;
@@ -121,6 +107,7 @@ exports.RatingsService = RatingsService;
 exports.RatingsService = RatingsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(rating_entity_1.Rating)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        stores_service_1.StoresService])
 ], RatingsService);
 //# sourceMappingURL=ratings.service.js.map

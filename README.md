@@ -6,7 +6,7 @@ A full-stack web application for managing store ratings with role-based access c
 
 ### Backend
 - **Framework**: NestJS
-- **Database**: PostgreSQL
+- **Database**: SQLite
 - **ORM**: TypeORM
 - **Authentication**: JWT with Passport
 
@@ -52,27 +52,7 @@ A full-stack web application for managing store ratings with role-based access c
 
 ### Prerequisites
 - Node.js (v18 or higher)
-- PostgreSQL (v12 or higher)
 - npm or yarn
-
-### Database Setup
-
-1. Create a PostgreSQL database:
-```sql
-CREATE DATABASE store_rating_system;
-```
-
-2. Update the database configuration in `backend/.env`:
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=your_password
-DB_DATABASE=store_rating_system
-JWT_SECRET=your-secret-key-change-this-in-production
-JWT_EXPIRATION=7d
-PORT=3000
-```
 
 ### Backend Setup
 
@@ -86,12 +66,21 @@ cd backend
 npm install
 ```
 
-3. Start the backend server in development mode:
+3. Configure environment variables in `backend/.env`:
+```env
+DB_DATABASE=./store-rating-system.db
+JWT_SECRET=your-secret-key-change-this-in-production
+PORT=3000
+```
+
+4. Start the backend server in development mode:
 ```bash
 npm run start:dev
 ```
 
 The backend will run on `http://localhost:3000`
+
+**Note**: The application uses SQLite for the database. The database file (`store-rating-system.db`) is automatically created on first run.
 
 ### Frontend Setup
 
@@ -158,11 +147,33 @@ npm run test:cov
 - `GET /ratings/owner/dashboard` - Get store owner dashboard (Store Owner only)
 - `GET /ratings/user` - Get user's ratings (User only)
 
-## Default Users
+## Default Test Accounts
 
-After setting up the database, you can create users via:
-1. The signup page (for normal users)
-2. The admin dashboard (for admin users to create other users)
+The application automatically seeds the following test accounts on first run:
+
+### Admin Account
+- **Email**: admin@store-rating.com
+- **Password**: Admin123!
+- **Role**: ADMIN
+- **Access**: Full access to Admin Dashboard (manage users, stores, view statistics)
+
+### Store Owner Account
+- **Email**: owner@example.com
+- **Password**: Owner123!
+- **Role**: STORE_OWNER
+- **Access**: Store Owner Dashboard (view store ratings, analytics)
+
+### Sample Stores
+The database is seeded with 5 sample stores:
+1. Tech Electronics Store
+2. Fresh Grocery Market
+3. Fashion Boutique
+4. Home Furniture Depot
+5. Sports Equipment Shop
+
+You can also create additional users via:
+- The signup page (for normal users)
+- The admin dashboard (for admin users to create other users)
 
 ## Project Structure
 
@@ -197,11 +208,34 @@ store-rating-system/
 
 ## Development Notes
 
-- The backend uses TypeORM with synchronize: true for auto-migration (not recommended for production)
+- The backend uses TypeORM with SQLite for the database
+- The database file (`store-rating-system.db`) is automatically created on first run
 - All passwords are hashed using bcrypt
-- JWT tokens are used for authentication
-- CORS is enabled for the frontend at localhost:5173
+- JWT tokens are used for authentication with localStorage persistence
+- CORS is enabled for all origins in development mode
 - All tables support sorting by key fields
+- The application automatically seeds an admin user, store owner, and sample stores on first run
+
+## User Management
+
+### Deleting Users
+Currently, there is no UI option to delete users. To delete a user manually:
+
+1. **Via Database**: You can directly interact with the SQLite database:
+```bash
+cd backend
+sqlite3 store-rating-system.db
+DELETE FROM users WHERE email = 'user@example.com';
+.exit
+```
+
+2. **Via Admin Dashboard**: The admin dashboard allows viewing and filtering users, but deletion functionality would need to be added to the backend API and frontend UI.
+
+### Adding User Deletion (Future Enhancement)
+To enable user deletion through the UI, you would need to:
+1. Add a `DELETE /users/:id` endpoint in `backend/src/users/users.controller.ts`
+2. Implement the delete method in `backend/src/users/users.service.ts`
+3. Add a delete button in the Admin Dashboard frontend component
 
 ## Production Deployment
 

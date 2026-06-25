@@ -100,6 +100,12 @@ let StoresService = class StoresService {
             };
         }));
     }
+    async findByOwner(ownerId) {
+        return this.storesRepository.find({
+            where: { ownerId },
+            relations: ['ratings', 'ratings.user'],
+        });
+    }
 };
 exports.StoresService = StoresService;
 exports.StoresService = StoresService = __decorate([

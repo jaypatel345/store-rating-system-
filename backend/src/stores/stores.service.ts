@@ -115,4 +115,11 @@ export class StoresService {
       }),
     );
   }
+
+  async findByOwner(ownerId: string): Promise<Store[]> {
+    return this.storesRepository.find({
+      where: { ownerId },
+      relations: ['ratings', 'ratings.user'],
+    });
+  }
 }

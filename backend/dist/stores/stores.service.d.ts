@@ -15,4 +15,5 @@ export declare class StoresService {
         name?: string;
         address?: string;
     }): Promise<any[]>;
+    findByOwner(ownerId: string): Promise<Store[]>;
 }

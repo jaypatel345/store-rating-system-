@@ -12,12 +12,13 @@ const typeorm_1 = require("@nestjs/typeorm");
 const ratings_service_1 = require("./ratings.service");
 const ratings_controller_1 = require("./ratings.controller");
 const rating_entity_1 = require("./entities/rating.entity");
+const stores_module_1 = require("../stores/stores.module");
 let RatingsModule = class RatingsModule {
 };
 exports.RatingsModule = RatingsModule;
 exports.RatingsModule = RatingsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([rating_entity_1.Rating])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([rating_entity_1.Rating]), stores_module_1.StoresModule],
         controllers: [ratings_controller_1.RatingsController],
         providers: [ratings_service_1.RatingsService],
         exports: [ratings_service_1.RatingsService],

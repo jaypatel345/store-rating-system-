@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rating } from './entities/rating.entity';
 import { CreateRatingDto } from './dto/create-rating.dto';
+import { StoresService } from '../stores/stores.service';
 
 @Injectable()
 export class RatingsService {
   constructor(
     @InjectRepository(Rating)
     private ratingsRepository: Repository<Rating>,
+    private storesService: StoresService,
   ) {}
 
   async create(createRatingDto: CreateRatingDto, userId: string): Promise<Rating> {
@@ -81,46 +83,30 @@ export class RatingsService {
   }
 
   async getStoreOwnerDashboard(ownerId: string): Promise<any> {
-    const ratings = await this.ratingsRepository
-      .createQueryBuilder('rating')
-      .leftJoinAndSelect('rating.store', 'store')
-      .leftJoinAndSelect('rating.user', 'user')
-      .leftJoin('store.owner', 'owner')
-      .where('owner.id = :ownerId', { ownerId })
-      .getMany();
+    const stores = await this.storesService.findByOwner(ownerId);
 
-    const storeRatings = ratings.reduce((acc, rating) => {
-      if (!acc[rating.storeId]) {
-        acc[rating.storeId] = {
-          storeId: rating.storeId,
-          storeName: rating.store.name,
-          ratings: [],
-        };
-      }
-      acc[rating.storeId].ratings.push({
-        user: {
-          id: rating.user.id,
-          name: rating.user.name,
-          email: rating.user.email,
-        },
-        rating: rating.rating,
-        createdAt: rating.createdAt,
-      });
-      return acc;
-    }, {} as any);
-
-    const result = Object.values(storeRatings).map((store: any) => {
+    const result = stores.map((store) => {
       const averageRating =
         store.ratings.length > 0
-          ? store.ratings.reduce((sum: number, r: any) => sum + r.rating, 0) / store.ratings.length
+          ? store.ratings.reduce((sum, r) => sum + r.rating, 0) / store.ratings.length
           : 0;
 
+      const validRatings = store.ratings.filter((rating) => rating.user != null);
+
       return {
-        storeId: store.storeId,
-        storeName: store.storeName,
+        storeId: store.id,
+        storeName: store.name,
         averageRating: parseFloat(averageRating.toFixed(2)),
         totalRatings: store.ratings.length,
-        ratings: store.ratings,
+        ratings: validRatings.map((rating) => ({
+          user: {
+            id: rating.user.id,
+            name: rating.user.name,
+            email: rating.user.email,
+          },
+          rating: rating.rating,
+          createdAt: rating.createdAt,
+        })),
       };
     });
 
